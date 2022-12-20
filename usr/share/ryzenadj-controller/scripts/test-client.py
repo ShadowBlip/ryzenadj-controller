@@ -16,7 +16,7 @@ except socket.error as err:
 try:
     
     # Send data
-    message = b'--stapm-limit=bob'
+    message = b'--stapm-limit=45000'
     print(f'sending {message}')
     sock.sendall(message)
 

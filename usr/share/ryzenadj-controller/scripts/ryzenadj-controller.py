@@ -16,14 +16,10 @@ logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s]
 
 logger = logging.getLogger(__name__)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
-RYZENADJ_DELAY = 0.5
 
 class RyzenControl:
     cpu = None
-    performance_selected = '--power-saving'
-    performance_set = None
     running = False
-    set_tctl = 95
     socket = '/tmp/ryzenadj_socket'
     valid_commands = []
     def __init__(self):
@@ -122,25 +118,6 @@ class RyzenControl:
             ryzenadj_command = f'ryzenadj {command} {args[0]}'
         run = os.popen(ryzenadj_command, 'r', 1).read().strip()
         return run
-
-    async def check_tctl_set(self):
-
-        # Check if this model is one that will not set tctl properly
-        if self.cpu in [
-                'AMD Ryzen 5 5560U with Radeon Graphics',
-                ]:
-            logger.info(f'{self.cpu} does not support tctl setting. Skipping automatic tctl management.')
-            return
-
-        while self.running:
-            # Ensure safe temp ctl settings. Ensures OXP devices dont fry themselves.
-            run = self.do_adjust('-i').splitlines()
-            tctl = [i for i in run if 'THM LIMIT CORE' in i][0].split()[5]
-            if tctl != f'{self.set_tctl}.000':
-                logger.info(f'found tctl set to {tctl}')
-                logger.info(self.do_adjust(f'-f {self.set_tctl}').strip())
-
-            await sleep(RYZENADJ_DELAY)
 
     async def stop_loop(self, loop):
 
