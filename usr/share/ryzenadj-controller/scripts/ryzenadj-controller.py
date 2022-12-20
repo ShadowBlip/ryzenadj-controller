@@ -94,7 +94,7 @@ class RyzenControl:
         if data:
             result = self.handle_command(data)
             logger.info(result)
-            writer.write(bytes(result, 'utf-8'))
+            writer.write(result.encode('utf-8'))
 
     def handle_command(self, message):
         check_command = message[0]
