@@ -5,13 +5,13 @@ import signal
 import socket
 import sys
 import warnings
-from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, ensure_future, Future, get_event_loop, Protocol, sleep, SubprocessProtocol, Transport
+from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, ensure_future, Future, get_event_loop, InvalidStateError, Protocol, sleep, SubprocessProtocol, Transport
 
 from support import supported_devices
 
 logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(message)s',
                     datefmt='%y%m%d_%H:%M:%S',
-                    level=logging.DEBUG
+                    level=logging.INFO
                     )
 
 logger = logging.getLogger(__name__)
@@ -32,12 +32,16 @@ class DataProtocol(Protocol):
         self.transport.close()
 
     def connection_lost(self, exc):
-        self.on_con_lost.set_result(True)
+        try:
+            self.on_con_lost.set_result(True)
+        except InvalidStateError:
+            return False
 
 class RyzenTCTL():
     def __init__(self):
         self.cpu = None
         self.current_settings = None
+        self.last_command = None
         self.performance_selected = '--power-saving'
         self.performance_set = None
         self.protocol = None
@@ -75,25 +79,40 @@ class RyzenTCTL():
         if self.cpu not in supported_devices:
             logger.error('{self.cpu} is not supported.')
             exit(2)
-    
+
     def send_message(self, message):
+        logger.debug(f'Sending command: {message}')
         self.loop.call_soon(self.socket.send, message.encode())
 
     def receive_message(self, message):
         logger.debug(f'reveived message:\n{message}')
+        match(self.last_command):
+            case '-i':
+                self.current_settings = message.splitlines()
+                logger.debug(f'{self.current_settings}')
+            case _:
+                logger.info(f'{message}')
 
     async def connect_socket(self):
         while self.running:
+            if not os.path.exists(self.socket_address):
+                await sleep(RYZENADJ_DELAY)
+                continue
             if not self.socket:
-                self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                self.socket.connect(self.socket_address)
+                try:
+                    self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                    self.socket.connect(self.socket_address)
+                except ConnectionRefusedError:
+                    logger.warn('Could not connect to RyzenaAdj Control')
+                    await sleep(RYZENADJ_DELAY)
+                    continue
 
             if not self.transport or not self.protocol:
                 try:
                     on_con_lost = self.loop.create_future()
                     self.transport, self.protocol = await self.loop.create_unix_connection(lambda: DataProtocol(on_con_lost, self.receive_message), sock=self.socket)
                     logger.debug(f"got {self.transport}, {self.protocol}")
-                    try: 
+                    try:
                         await self.protocol.on_con_lost
                     finally:
                         self.transport.close()
@@ -101,7 +120,9 @@ class RyzenTCTL():
                         self.transport = None
                         self.socket = None
                 except ConnectionRefusedError:
-                    logger.debug('Could not connect to RyzenaAdj Control')
+                    logger.warn('Could not connect to RyzenaAdj Control')
+                    await sleep(RYZENADJ_DELAY)
+                    continue
 
     async def check_tctl_set(self):
 
@@ -121,10 +142,16 @@ class RyzenTCTL():
                 continue
             # Ensure safe temp ctl settings. Ensures OXP devices dont fry themselves.
             self.send_message('-i')
-            #tctl = [i for i in run if 'THM LIMIT CORE' in i][0].split()[5]
-            #if tctl != f'{self.set_tctl}.000':
-            #    logger.info(f'found tctl set to {tctl}')
-            #    self.do_adjust(b'-f {self.set_tctl}')
+            self.last_command = '-i'
+            if self.current_settings == None:
+                await sleep(RYZENADJ_DELAY)
+                continue
+            await sleep(RYZENADJ_DELAY)
+            tctl = [i for i in self.current_settings if 'THM LIMIT CORE' in i][0].split()[5]
+            if tctl != f'{self.set_tctl}.000':
+                logger.info(f'found tctl set to {tctl}')
+                self.send_message(f'-f {self.set_tctl}')
+                self.last_command = '-f'
 
             await sleep(RYZENADJ_DELAY)
 
