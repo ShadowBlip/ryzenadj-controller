@@ -3,7 +3,7 @@ Description=RyzenAdj Controller Service
 After=sockets.target
 
 [Service]
-ExecStart=/sbin/python3 /usr/share/ryzenadj-controller/scripts/ryzenadj-controller.py
+ExecStart=/usr/bin/ryzenadj-controller
 
 [Install]
 WantedBy=default.target
