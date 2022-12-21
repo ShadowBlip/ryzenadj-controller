@@ -7,7 +7,7 @@ import sys
 import warnings
 from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, ensure_future, get_event_loop, sleep, start_unix_server
 
-from support import supported_devices
+from .support import supported_devices
 
 logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(message)s',
                     datefmt='%y%m%d_%H:%M:%S',
@@ -136,5 +136,4 @@ class RyzenControl:
 if __name__ == '__main__':
 
     RyzenControl = RyzenControl()
-
-    server = RyzenControl.start_server_task(start_unix_server, RyzenControl.handle_message)
+    RyzenControl.start_server_task(start_unix_server, RyzenControl.handle_message)
