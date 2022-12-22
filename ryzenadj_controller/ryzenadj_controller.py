@@ -1,13 +1,10 @@
-#!/usr/sbin/python3
 import logging
 import os
 import signal
-import socket
-import sys
 import warnings
-from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, ensure_future, get_event_loop, sleep, start_unix_server
+from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, get_event_loop, start_unix_server
 
-from .support import supported_devices
+from .support import SUPPORTED_DEVICES
 
 logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(message)s',
                     datefmt='%y%m%d_%H:%M:%S',
@@ -45,7 +42,7 @@ class RyzenControl:
         command = 'lscpu | grep "Model name" | grep -v "BIOS" | cut -d : -f 2 | xargs'
         self.cpu = os.popen(command).read().strip()
         logger.debug(f'found {self.cpu}')
-        if self.cpu not in supported_devices:
+        if self.cpu not in SUPPORTED_DEVICES:
             logger.error('{self.cpu} is not supported.')
             exit(1)
 
@@ -133,7 +130,7 @@ class RyzenControl:
         loop.stop()
         logger.info('ryzenadj-control service stopped.')
 
-if __name__ == '__main__':
 
-    RyzenControl = RyzenControl()
-    RyzenControl.start_server_task(start_unix_server, RyzenControl.handle_message)
+def main():
+    ryzen_control = RyzenControl()
+    ryzen_control.start_server_task(start_unix_server, RyzenControl.handle_message)
