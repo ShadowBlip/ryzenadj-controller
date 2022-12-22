@@ -26,4 +26,4 @@ dependencies = []
 include = ["ryzenadj_controller"]
 
 [project.scripts]
-ryzenadj-controller = "ryzenadj_controller:main"
+ryzenadj-controller = "ryzenadj_controller.ryzenadj_controller:main"
