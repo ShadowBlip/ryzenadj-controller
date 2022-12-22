@@ -1,13 +1,11 @@
-#!/usr/sbin/python3
 import logging
 import os
 import signal
-import socket
-import sys
 import warnings
-from asyncio import all_tasks, CancelledError, coroutine, create_task, current_task, ensure_future, get_event_loop, sleep, start_unix_server
+from asyncio import (all_tasks, CancelledError, coroutine, create_task,
+                     current_task, get_event_loop, start_unix_server)
 
-from support import supported_devices
+from .support import SUPPORTED_DEVICES
 
 logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(message)s',
                     datefmt='%y%m%d_%H:%M:%S',
@@ -44,9 +42,9 @@ class RyzenControl:
     def check_supported(self):
         command = 'lscpu | grep "Model name" | grep -v "BIOS" | cut -d : -f 2 | xargs'
         self.cpu = os.popen(command).read().strip()
-        logger.debug(f'found {self.cpu}')
-        if self.cpu not in supported_devices:
-            logger.error('{self.cpu} is not supported.')
+        logger.debug('Found cpu: %s', self.cpu)
+        if self.cpu not in SUPPORTED_DEVICES:
+            logger.error('%s is not supported.', self.cpu)
             exit(1)
 
     # Have RyzenAdj report all valid comands from help file.
@@ -83,14 +81,14 @@ class RyzenControl:
 
         self.loop.create_task(unix_server)
 
-        logger.info(f'Unix socket opened at {self.socket}')
+        logger.info('Unix socket opened at %s', self.socket)
         self.loop.run_forever()
 
     @coroutine
     async def handle_message(self, reader, writer):
         raw_data = await reader.read(4096)
         data = raw_data.decode('utf-8').strip().split()
-        logger.debug(f'{data}')
+        logger.debug("DATA: %s", data)
         if data:
             result = self.handle_command(data)
             logger.info(result)
@@ -133,8 +131,7 @@ class RyzenControl:
         loop.stop()
         logger.info('ryzenadj-control service stopped.')
 
-if __name__ == '__main__':
 
-    RyzenControl = RyzenControl()
-
-    server = RyzenControl.start_server_task(start_unix_server, RyzenControl.handle_message)
+def main():
+    ryzen_control = RyzenControl()
+    ryzen_control.start_server_task(start_unix_server, ryzen_control.handle_message)

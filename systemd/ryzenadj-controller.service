@@ -1,0 +1,9 @@
+[Unit]
+Description=RyzenAdj Controller Service
+After=sockets.target
+
+[Service]
+ExecStart=/usr/bin/ryzenadj-controller
+
+[Install]
+WantedBy=multi-user.target

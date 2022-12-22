@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-supported_devices = (
+SUPPORTED_DEVICES = (
     'AMD Athlon Silver 3020e with Radeon Graphics',
     'AMD Athlon Silver 3050e with Radeon Graphics',
     'AMD Ryzen 3 2200U with Radeon Graphics',
