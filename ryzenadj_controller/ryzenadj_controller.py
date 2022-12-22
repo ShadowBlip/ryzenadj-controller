@@ -134,4 +134,4 @@ class RyzenControl:
 
 def main():
     ryzen_control = RyzenControl()
-    ryzen_control.start_server_task(start_unix_server, RyzenControl.handle_message)
+    ryzen_control.start_server_task(start_unix_server, ryzen_control.handle_message)
