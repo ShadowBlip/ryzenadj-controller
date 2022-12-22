@@ -6,7 +6,7 @@ import socket
 import warnings
 from asyncio import all_tasks, CancelledError, create_task, current_task, ensure_future, get_event_loop, InvalidStateError, Protocol, sleep
 
-from .support import SUPPORTED_DEVICES
+from ryzenadj_controller.support import SUPPORTED_DEVICES
 
 logging.basicConfig(format='[%(asctime)s | %(filename)s:%(lineno)s:%(funcName)s] %(message)s',
                     datefmt='%y%m%d_%H:%M:%S',
