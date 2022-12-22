@@ -16,21 +16,21 @@ logger = logging.getLogger(__name__)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 class RyzenControl:
-    cpu = None
-    running = False
-    socket = '/tmp/ryzenadj_socket'
-    valid_commands = []
     def __init__(self):
+        self.cpu = None
+        self.socket = '/tmp/ryzenadj_socket'
+        self.valid_commands = []
+
         logger.info('ryzenadj-control service started')
         self.check_ryzen_installed()
         self.check_supported()
-        self.task = None
-        self.running = True
         self.get_valid_commands()
         self.loop = get_event_loop()
 
         for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT, signal.SIGQUIT):
             self.loop.add_signal_handler(s, lambda s=s: create_task(self.stop_loop(self.loop)))
+
+        self.start_server()
 
     # Verify RyzenAdj is installed.
     def check_ryzen_installed(self):
@@ -70,15 +70,8 @@ class RyzenControl:
                     # Append the command after formatting. Gets rid of spaces, newlines, extra commas, =.
                     self.valid_commands.append(trunc_command[i].split('=')[0].strip().replace(',', ''))
 
-    # Check if a given command is supported.
-    def is_valid_command(self, raw_command):
-        if raw_command in self.valid_commands:
-            return True
-        return False
-
-    def start_server_task(self, Task, handler):
-        unix_server = Task(handler, path=self.socket)
-
+    def start_server(self):
+        unix_server = start_unix_server(self.handle_message, path=self.socket)
         self.loop.create_task(unix_server)
 
         logger.info('Unix socket opened at %s', self.socket)
@@ -110,6 +103,12 @@ class RyzenControl:
         if len(message) == 2:
             return self.do_adjust(message[0], message[1])
 
+    # Check if a given command is supported.
+    def is_valid_command(self, raw_command):
+        if raw_command in self.valid_commands:
+            return True
+        return False
+
     def do_adjust(self, command, *args):
         ryzenadj_command = f'ryzenadj {command}'
         if args:
@@ -118,7 +117,6 @@ class RyzenControl:
         return run
 
     async def stop_loop(self, loop):
-
         # Kill all tasks. They are infinite loops so we will wait forver.
         logger.info('Kill signal received. Shutting down.')
         self.running = False
@@ -134,4 +132,3 @@ class RyzenControl:
 
 def main():
     ryzen_control = RyzenControl()
-    ryzen_control.start_server_task(start_unix_server, ryzen_control.handle_message)
