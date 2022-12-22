@@ -3,8 +3,11 @@ import logging
 import os
 import signal
 import socket
+import sys
 import warnings
-from asyncio import all_tasks, CancelledError, create_task, current_task, ensure_future, get_event_loop, InvalidStateError, Protocol, sleep
+from asyncio import (all_tasks, CancelledError, create_task, current_task,
+                     ensure_future, get_event_loop, InvalidStateError,
+                     Protocol, sleep)
 
 from ryzenadj_controller.support import SUPPORTED_DEVICES
 
