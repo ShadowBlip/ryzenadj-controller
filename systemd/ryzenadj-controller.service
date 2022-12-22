@@ -6,4 +6,4 @@ After=sockets.target
 ExecStart=/usr/bin/ryzenadj-controller
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
