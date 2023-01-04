@@ -71,8 +71,11 @@ class RyzenControl:
                     self.valid_commands.append(trunc_command[i].split('=')[0].strip().replace(',', ''))
 
     def start_server(self):
-        unix_server = start_unix_server(self.handle_message, path=self.socket)
-        self.loop.create_task(unix_server)
+        if os.path.exists(self.socket):
+            os.remove(self.socket)
+        self.loop.run_until_complete(
+                start_unix_server(self.handle_message, path=self.socket))
+        os.chmod(self.socket, 0o777)
 
         logger.info('Unix socket opened at %s', self.socket)
         self.loop.run_forever()
