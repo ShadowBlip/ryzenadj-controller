@@ -87,7 +87,7 @@ class RyzenControl:
         logger.debug("DATA: %s", data)
         if data:
             result = self.handle_command(data)
-            logger.info(result)
+            logger.debug(result)
             writer.write(result.encode('utf-8'))
 
     def handle_command(self, message):
